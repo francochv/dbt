@@ -1,0 +1,49 @@
+version: 2
+
+models:
+  - name: stg_erp__products
+    description: Maestro de productos del ERP, una fila por product_code
+    columns:
+      - name: product_code
+        tests:
+          - unique
+          - not_null
+      - name: unit_cost
+        tests:
+          - dbt_utils.expression_is_true:
+              expression: "> 0"
+      - name: list_price
+        tests:
+          - dbt_utils.expression_is_true:
+              expression: "> 0"
+
+  - name: stg_erp__inventory
+    description: >
+      Snapshot diario de inventario por warehouse_id + product_code.
+      Incremental insert_overwrite por partición snapshot_date.
+    columns:
+      - name: product_code
+        tests:
+          - not_null
+      - name: warehouse_id
+        tests:
+          - not_null
+      - name: snapshot_date
+        tests:
+          - not_null
+      - name: quantity_on_hand
+        tests:
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+      - name: quantity_available
+        tests:
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+
+  - name: stg_erp__suppliers
+    description: Maestro de proveedores del ERP
+    columns:
+      - name: supplier_id
+        tests:
+          - unique
+          - not_null

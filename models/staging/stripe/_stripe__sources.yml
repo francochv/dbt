@@ -1,0 +1,53 @@
+version: 2
+
+sources:
+  - name: stripe
+    description: Raw Stripe data loaded via Fivetran
+    database: raw
+    schema: stripe
+    loader: fivetran
+    loaded_at_field: _fivetran_synced
+    freshness:
+      warn_after: { count: 12, period: hour }
+      error_after: { count: 24, period: hour }
+    tables:
+      - name: customers
+        description: Stripe customer records
+        columns:
+          - name: id
+            description: Primary key
+            tests:
+              - unique
+              - not_null
+          - name: email
+            description: Customer email
+          - name: created
+            description: Account creation timestamp
+
+      - name: payments
+        description: Stripe payment transactions
+        columns:
+          - name: id
+            tests:
+              - unique
+              - not_null
+          - name: customer_id
+            tests:
+              - not_null
+              - relationships:
+                  to: source('stripe', 'customers')
+                  field: id
+
+      - name: invoices
+        description: Facturas generadas por Stripe
+        columns:
+          - name: id
+            tests:
+              - unique
+              - not_null
+          - name: customer_id
+            tests:
+              - not_null
+              - relationships:
+                  to: source('stripe', 'customers')
+                  field: id

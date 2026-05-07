@@ -1,0 +1,59 @@
+version: 2
+
+sources:
+  - name: shopify
+    description: Raw Shopify data loaded via Fivetran
+    database: raw
+    schema: shopify
+    loader: fivetran
+    loaded_at_field: _fivetran_synced
+    freshness:
+      warn_after: { count: 12, period: hour }
+      error_after: { count: 24, period: hour }
+    tables:
+      - name: orders
+        description: Cabeceras de órdenes de Shopify
+        columns:
+          - name: id
+            tests:
+              - unique
+              - not_null
+          - name: customer_id
+            description: Referencia al cliente
+          - name: created_at
+            description: Timestamp de creación
+          - name: updated_at
+            description: Timestamp de última actualización
+
+      - name: customers
+        description: Perfiles de clientes de Shopify
+        columns:
+          - name: id
+            tests:
+              - unique
+              - not_null
+          - name: email
+            tests:
+              - not_null
+
+      - name: products
+        description: Catálogo de productos de Shopify
+        columns:
+          - name: id
+            tests:
+              - unique
+              - not_null
+
+      - name: order_line
+        description: Líneas de detalle de órdenes
+        columns:
+          - name: id
+            tests:
+              - unique
+              - not_null
+          - name: order_id
+            tests:
+              - not_null
+              - relationships:
+                  to: source('shopify', 'orders')
+                  field: id

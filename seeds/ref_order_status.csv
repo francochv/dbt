@@ -1,0 +1,5 @@
+order_status,order_status_label,is_terminal,is_revenue
+open,Abierta,false,false
+closed,Cerrada,true,true
+cancelled,Cancelada,true,false
+archived,Archivada,true,true

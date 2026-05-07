@@ -1,0 +1,40 @@
+version: 2
+
+models:
+  - name: fct_inventory_snapshots
+    description: >
+      Snapshot diario de inventario por producto y almacén.
+      Incremental insert_overwrite por partición snapshot_date.
+      Incluye stock_status derivado del reorder_point del ERP.
+    columns:
+      - name: product_key
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_products')
+              field: product_key
+      - name: product_code
+        tests:
+          - not_null
+      - name: warehouse_id
+        tests:
+          - not_null
+      - name: snapshot_date
+        tests:
+          - not_null
+      - name: stock_status
+        tests:
+          - accepted_values:
+              values: ['in_stock', 'low_stock', 'out_of_stock']
+      - name: quantity_on_hand
+        tests:
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+      - name: quantity_available
+        tests:
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+      - name: inventory_value
+        tests:
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"

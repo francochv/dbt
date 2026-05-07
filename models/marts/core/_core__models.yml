@@ -1,0 +1,152 @@
+version: 2
+
+models:
+  - name: dim_customers
+    description: >
+      Dimensión de clientes consolidada desde Stripe (métricas de pagos) y Shopify (métricas de órdenes).
+      Incluye segmentación customer_tier y customer_lifecycle.
+    tests:
+      - dbt_utils.recency:
+          datepart: day
+          field: _loaded_at
+          interval: 1
+    columns:
+      - name: customer_key
+        description: Surrogate key generada con dbt_utils.generate_surrogate_key
+        tests:
+          - unique
+          - not_null
+      - name: customer_id
+        description: Natural key del sistema fuente
+        tests:
+          - unique
+          - not_null
+      - name: email
+        tests:
+          - not_null
+      - name: customer_tier
+        description: Segmento por lifetime value — high/medium/low
+        tests:
+          - accepted_values:
+              values: ['high', 'medium', 'low']
+      - name: customer_lifecycle
+        description: Estado del ciclo de vida — active/at_risk/churned/no_orders
+        tests:
+          - accepted_values:
+              values: ['active', 'at_risk', 'churned', 'no_orders']
+      - name: payments_lifetime_value
+        tests:
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+      - name: orders_net_revenue
+        tests:
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+
+  - name: dim_products
+    description: >
+      Dimensión de productos, join entre ERP (costos, categorías) y Shopify (tipo, estado).
+      Clave natural: product_code del ERP.
+    columns:
+      - name: product_key
+        tests:
+          - unique
+          - not_null
+      - name: product_code
+        tests:
+          - unique
+          - not_null
+      - name: gross_margin
+        tests:
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+      - name: margin_pct
+        tests:
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+
+  - name: dim_date
+    description: Dimensión de fecha generada con dbt_utils.date_spine desde start_date hasta +2 años.
+    columns:
+      - name: date_day
+        tests:
+          - unique
+          - not_null
+
+  - name: fct_orders
+    description: >
+      Tabla de hechos de órdenes Shopify. Incremental merge por order_id.
+      Incluye join a dim_customers (customer_key) y dim_date (order_date_key).
+    tests:
+      - dbt_utils.recency:
+          datepart: day
+          field: created_at
+          interval: 1
+    columns:
+      - name: order_id
+        tests:
+          - unique
+          - not_null
+      - name: customer_key
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_customers')
+              field: customer_key
+      - name: order_date_key
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_date')
+              field: date_day
+      - name: order_status
+        tests:
+          - accepted_values:
+              values: ['open', 'closed', 'cancelled', 'archived']
+      - name: total_price
+        tests:
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+      - name: total_discount
+        tests:
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+
+  - name: fct_payments
+    description: >
+      Tabla de hechos de pagos Stripe. Incremental delete+insert por payment_id.
+      Incluye net_amount = amount - amount_refunded.
+    tests:
+      - dbt_utils.recency:
+          datepart: day
+          field: created_at
+          interval: 1
+    columns:
+      - name: payment_id
+        tests:
+          - unique
+          - not_null
+      - name: customer_key
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_customers')
+              field: customer_key
+      - name: payment_date_key
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_date')
+              field: date_day
+      - name: payment_status
+        tests:
+          - accepted_values:
+              values: ['succeeded', 'pending', 'failed', 'canceled', 'refunded']
+      - name: amount
+        tests:
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+      - name: net_amount
+        tests:
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"

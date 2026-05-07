@@ -1,0 +1,63 @@
+version: 2
+
+models:
+  - name: stg_shopify__orders
+    description: Órdenes de Shopify, una fila por order_id
+    columns:
+      - name: order_id
+        tests:
+          - unique
+          - not_null
+      - name: order_status
+        tests:
+          - accepted_values:
+              values: ['open', 'closed', 'cancelled', 'archived']
+      - name: total_price
+        tests:
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+
+  - name: stg_shopify__customers
+    description: Clientes de Shopify, una fila por customer_id
+    columns:
+      - name: customer_id
+        tests:
+          - unique
+          - not_null
+      - name: email
+        tests:
+          - not_null
+
+  - name: stg_shopify__products
+    description: Catálogo de productos de Shopify
+    columns:
+      - name: product_id
+        tests:
+          - unique
+          - not_null
+      - name: product_status
+        tests:
+          - accepted_values:
+              values: ['active', 'archived', 'draft']
+
+  - name: stg_shopify__order_items
+    description: Líneas de detalle de órdenes de Shopify
+    columns:
+      - name: order_item_id
+        tests:
+          - unique
+          - not_null
+      - name: order_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_shopify__orders')
+              field: order_id
+      - name: quantity
+        tests:
+          - dbt_utils.expression_is_true:
+              expression: "> 0"
+      - name: unit_price
+        tests:
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"

@@ -1,0 +1,61 @@
+version: 2
+
+models:
+  - name: stg_stripe__customers
+    description: Clientes de Stripe, una fila por customer_id
+    columns:
+      - name: customer_id
+        tests:
+          - unique
+          - not_null
+      - name: email
+        tests:
+          - not_null
+
+  - name: stg_stripe__payments
+    description: Pagos de Stripe. Incremental por _fivetran_synced usando delete+insert.
+    columns:
+      - name: payment_id
+        tests:
+          - unique
+          - not_null
+      - name: customer_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_stripe__customers')
+              field: customer_id
+      - name: payment_status
+        tests:
+          - accepted_values:
+              values: ['succeeded', 'pending', 'failed', 'canceled', 'refunded']
+      - name: amount
+        tests:
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+      - name: amount_refunded
+        tests:
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+
+  - name: stg_stripe__invoices
+    description: Facturas de Stripe. Incremental por _fivetran_synced.
+    columns:
+      - name: invoice_id
+        tests:
+          - unique
+          - not_null
+      - name: customer_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_stripe__customers')
+              field: customer_id
+      - name: invoice_status
+        tests:
+          - accepted_values:
+              values: ['draft', 'open', 'paid', 'uncollectible', 'void']
+      - name: amount_due
+        tests:
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"

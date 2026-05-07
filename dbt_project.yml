@@ -1,0 +1,44 @@
+name: "analytics"
+version: "1.0.0"
+profile: "analytics"
+
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+vars:
+  start_date: "2020-01-01"
+
+models:
+  analytics:
+    staging:
+      +materialized: view
+      +schema: staging
+      stripe:
+        +tags: ["stripe"]
+      shopify:
+        +tags: ["shopify"]
+      erp:
+        +tags: ["erp"]
+    intermediate:
+      +materialized: ephemeral
+    marts:
+      +materialized: table
+      +schema: analytics
+      core:
+        +tags: ["critical"]
+      supply_chain:
+        +schema: supply_chain
+        +tags: ["supply_chain"]
+
+snapshots:
+  analytics:
+    +target_schema: snapshots
+
+seeds:
+  analytics:
+    +schema: seeds
+    +quote_columns: false

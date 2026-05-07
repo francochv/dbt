@@ -1,0 +1,45 @@
+version: 2
+
+sources:
+  - name: erp
+    description: ERP SQL Server cargado via CDC batch diario
+    database: raw
+    schema: erp
+    loader: sqlserver_cdc
+    loaded_at_field: _batch_loaded_at
+    freshness:
+      warn_after: { count: 26, period: hour }
+      error_after: { count: 48, period: hour }
+    tables:
+      - name: products
+        description: Maestro de productos del ERP
+        columns:
+          - name: product_code
+            tests:
+              - unique
+              - not_null
+          - name: product_id
+            tests:
+              - unique
+              - not_null
+
+      - name: inventory_snapshots
+        description: Snapshot diario de inventario por almacén y producto
+        columns:
+          - name: warehouse_id
+            tests:
+              - not_null
+          - name: product_code
+            tests:
+              - not_null
+          - name: snapshot_date
+            tests:
+              - not_null
+
+      - name: suppliers
+        description: Maestro de proveedores
+        columns:
+          - name: supplier_id
+            tests:
+              - unique
+              - not_null

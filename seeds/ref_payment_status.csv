@@ -1,0 +1,8 @@
+payment_status,payment_status_label,is_successful,is_terminal
+pending,Pendiente,false,false
+authorized,Autorizado,false,false
+partially_paid,Parcialmente Pagado,false,false
+paid,Pagado,true,true
+partially_refunded,Parcialmente Reembolsado,true,true
+refunded,Reembolsado,false,true
+voided,Anulado,false,true
